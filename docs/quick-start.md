@@ -1,6 +1,6 @@
 # 第一次使用：下載程式、開啟自動寄信
 
-完成設定後，GitHub 會每週一查 MSU 菜單，有新的起司蛋糕候選就寄信。自己的電腦可以關機。
+完成設定後，GitHub 會每週一查 MSU 菜單並寄出午餐候選表格。自己的電腦可以關機。
 
 下載程式和自動寄信是兩件事。只想收信，可以跳過第 1、2 步，直接從第 3 步開始。
 
@@ -8,7 +8,7 @@
 
 這個專案是私有的。請先把自己的 **GitHub 帳號名稱**交給倉庫擁有人，請對方在專案的 **Settings → Collaborators → Add people** 邀請你，再登入 GitHub 接受邀請。
 
-確認能開啟 [專案首頁](https://github.com/cola-byte/msu-cheesecake)。如果出現 404，先確認登入帳號及邀請是否已接受。
+確認能開啟 [專案首頁](https://github.com/jhtong33/msu-cheesecake)。如果出現 404，先確認登入帳號及邀請是否已接受。
 
 個人帳號倉庫的協作者可以新增這裡需要的 repository secrets / variables；參見 [GitHub 官方說明](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)。
 
@@ -19,7 +19,7 @@
 Windows 開啟 PowerShell；Mac 開啟 Terminal。到想存放程式的資料夾，一行一行貼上：
 
 ```sh
-git clone https://github.com/cola-byte/msu-cheesecake.git
+git clone https://github.com/jhtong33/msu-cheesecake.git
 cd msu-cheesecake
 ```
 
@@ -51,7 +51,7 @@ python3 probe_menus.py --refresh
 
 ## 3. 確認寄件、收件信箱
 
-打開 [GitHub 的 Variables 設定頁](https://github.com/cola-byte/msu-cheesecake/settings/variables/actions)，確認以下三項：
+打開 [GitHub 的 Variables 設定頁](https://github.com/jhtong33/msu-cheesecake/settings/variables/actions)，確認以下三項：
 
 | 名稱 | 應填內容 |
 |---|---|
@@ -75,7 +75,7 @@ python3 probe_menus.py --refresh
 
 ## 5. 把密碼存到 GitHub
 
-打開 [GitHub 的 Secrets 設定頁](https://github.com/cola-byte/msu-cheesecake/settings/secrets/actions)，按 **New repository secret**：
+打開 [GitHub 的 Secrets 設定頁](https://github.com/jhtong33/msu-cheesecake/settings/secrets/actions)，按 **New repository secret**：
 
 | 欄位 | 填入內容 |
 |---|---|
@@ -86,7 +86,7 @@ python3 probe_menus.py --refresh
 
 ## 6. 寄一封測試信
 
-1. 打開 [MSU menu email 執行頁](https://github.com/cola-byte/msu-cheesecake/actions/workflows/menu-email.yml)。
+1. 打開 [MSU menu email 執行頁](https://github.com/jhtong33/msu-cheesecake/actions/workflows/menu-email.yml)。
 2. 按 **Run workflow**。
 3. Branch 保持 **main**，mode 選 **test-email**。
 4. 按下選單裡的綠色 **Run workflow** 按鈕。
@@ -97,13 +97,13 @@ python3 probe_menus.py --refresh
 
 ## 7. 開啟每週自動檢查
 
-回到 [Variables 設定頁](https://github.com/cola-byte/msu-cheesecake/settings/variables/actions)，編輯 `EMAIL_ENABLED`，把值從 `false` 改成小寫的 `true`，再儲存。
+回到 [Variables 設定頁](https://github.com/jhtong33/msu-cheesecake/settings/variables/actions)，編輯 `EMAIL_ENABLED`，把值從 `false` 改成小寫的 `true`，再儲存。
 
 完成！之後每週一 **MSU 當地時間凌晨 02:00** 由 GitHub 執行，可能稍有延遲，電腦不用開著。
 
-想現在就查一次，回到 [MSU menu email](https://github.com/cola-byte/msu-cheesecake/actions/workflows/menu-email.yml)，再按 **Run workflow**，這次 mode 選 **send**。
+想現在就查一次，回到 [MSU menu email](https://github.com/jhtong33/msu-cheesecake/actions/workflows/menu-email.yml)，再按 **Run workflow**，這次 mode 選 **send**。
 
-郵件列出本週今天起的起司蛋糕候選，並另外標示起司蛋糕相關甜點，例如冰淇淋。沒有新候選就不寄；同樣的結果不會重複寄。每週只自動檢查一次，週一之後更新的菜單要手動執行 **send** 才會在當週通知。菜單是預定供應，仍以餐廳現場為準。
+郵件表格列出本週今天起的起司蛋糕候選，並另外標示起司蛋糕相關甜點，例如冰淇淋。沒有候選時仍會寄出表格並標示沒有結果。每次手動執行 **send** 也會寄信。每週只自動檢查一次，週一之後更新的菜單要手動執行 **send** 才會在當週通知。菜單是預定供應，仍以餐廳現場為準。
 
 ## 卡住時先看這裡
 
@@ -113,7 +113,7 @@ python3 probe_menus.py --refresh
 | 找不到 `git` 或 `python` 指令 | 本機尚未安裝對應軟體，或安裝後需要重開終端機；只用自動寄信可跳到第 3 步 |
 | `test-email` 出現紅色叉叉 | 點開失敗步驟，確認寄件帳號和應用程式密碼屬於同一個 Google 帳號，且 Secret 名稱是 `SMTP_PASSWORD` |
 | 排程顯示 Skipped | 確認 `EMAIL_ENABLED` 是小寫 `true` |
-| 週一沒有收到信 | 沒有新候選時不寄信；到 Actions 查看最近一次是否成功 |
+| 週一沒有收到信 | 到 Actions 查看最近一次是否成功，並確認收件地址與垃圾郵件 |
 | 想暫停自動檢查 | 把 `EMAIL_ENABLED` 改回 `false` |
 
 進階模式與寄送狀態處理，請看 [自動寄信設定](email-setup.md)。

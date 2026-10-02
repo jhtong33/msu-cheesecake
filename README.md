@@ -15,7 +15,7 @@
 在終端機貼上以下指令。這是私有倉庫，需要使用已獲邀請的 GitHub 帳號登入，才能下載：
 
 ```sh
-git clone https://github.com/cola-byte/msu-cheesecake.git
+git clone https://github.com/jhtong33/msu-cheesecake.git
 cd msu-cheesecake
 ```
 

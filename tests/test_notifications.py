@@ -1,13 +1,14 @@
 from copy import deepcopy
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
+from zoneinfo import ZoneInfo
 
 from filter_menus import classify
-from notify_menus import LocalState, GitHubState, deliver, digest, render_email, select_updates, smtp_config, send_email
+from notify_menus import LocalState, GitHubState, deliver, digest, main, render_email, select_updates, smtp_config, send_email
 
 
 def record(**changes):
@@ -28,38 +29,38 @@ class Notifications(unittest.TestCase):
     def test_wide_capture_but_bounded_email(self):
         rows = [record(), record(food_id=2, kind="related_dessert_review", name="Cheesecake Ice Cream"),
                 record(food_id=3, kind="broad_review", name="Cheese Pizza")]
-        updates = select_updates(report(rows), {}, date(2026, 9, 22))
+        updates = select_updates(report(rows), date(2026, 9, 22))
         self.assertEqual(len(updates), 2)
         self.assertEqual(classify({"name": "Cheese Pizza"})["kind"], "broad_review")
 
     def test_expired_dates_excluded_sunday_included(self):
-        updates = select_updates(report([record(date="2026-09-21"), record(date="2026-09-27")]), {}, date(2026, 9, 22))
+        updates = select_updates(report([record(date="2026-09-21"), record(date="2026-09-27")]), date(2026, 9, 22))
         self.assertEqual([v["date"] for v in updates.values()], ["2026-09-27"])
 
     def test_only_lunch_selected_and_duplicates_collapsed(self):
         rows = [record(), record(), record(meal_slug="dinner", meal="Dinner")]
-        self.assertEqual(len(select_updates(report(rows), {}, date(2026, 9, 22))), 1)
+        self.assertEqual(len(select_updates(report(rows), date(2026, 9, 22))), 1)
 
-    def test_success_deduplicates_and_changed_name_is_new(self):
+    def test_current_candidates_are_selected_even_when_previously_sent(self):
         state = {"version": 1, "recipients": {}}
         store, sender = Mock(), Mock()
-        updates = select_updates(report(), {}, date(2026, 9, 22))
+        updates = select_updates(report(), date(2026, 9, 22))
         deliver(store, state, "recipient", updates, {}, ("subject", "body", "html"), date(2026, 9, 22), sender)
         sender.assert_called_once()
         self.assertEqual(store.save.call_count, 2)
-        sent = state["recipients"]["recipient"]["sent"]
-        self.assertEqual(select_updates(report(), sent, date(2026, 9, 22)), {})
-        self.assertEqual(len(select_updates(report([record(name="Fruit Cheesecake")]), sent, date(2026, 9, 22))), 1)
+        self.assertEqual(len(state["recipients"]["recipient"]["sent"]), 1)
+        self.assertEqual(len(select_updates(report(), date(2026, 9, 22))), 1)
+        self.assertEqual(len(select_updates(report([record(name="Fruit Cheesecake")]), date(2026, 9, 22))), 1)
 
     def test_incomplete_report_does_not_mean_no_matches(self):
         bad = report()
         bad["errors"] = 1
         with self.assertRaises(ValueError):
-            select_updates(bad, {}, date(2026, 9, 22))
+            select_updates(bad, date(2026, 9, 22))
         bad["errors"] = 0
         bad["coverage"] = []
         with self.assertRaises(ValueError):
-            select_updates(bad, {}, date(2026, 9, 22))
+            select_updates(bad, date(2026, 9, 22))
 
     def test_pending_saved_before_send_and_blocks_retry(self):
         saved = []
@@ -82,17 +83,17 @@ class Notifications(unittest.TestCase):
         sender.assert_not_called()
 
     def test_html_escaped_and_unexpected_link_rejected(self):
-        updates = select_updates(report([record(name="<script>alert(1)</script> Cheesecake")]), {}, date(2026, 9, 22))
+        updates = select_updates(report([record(name="<script>alert(1)</script> Cheesecake")]), date(2026, 9, 22))
         _, _, body = render_email(updates, report())
         self.assertIn("&lt;script&gt;", body)
         self.assertNotIn("<script>", body)
         self.assertIn("charset='utf-8'", body)
-        updates = select_updates(report([record(menu_url="https://example.invalid/")]), {}, date(2026, 9, 22))
+        updates = select_updates(report([record(menu_url="https://example.invalid/")]), date(2026, 9, 22))
         with self.assertRaises(ValueError):
             render_email(updates, report())
 
     def test_notification_is_in_english(self):
-        updates = select_updates(report(), {}, date(2026, 9, 22))
+        updates = select_updates(report(), date(2026, 9, 22))
         subject, plain, markup = render_email(updates, report())
         self.assertEqual(subject, "[cheesecake] 9/21 - 9/27")
         self.assertIn("Cheesecake candidates", plain)
@@ -100,6 +101,30 @@ class Notifications(unittest.TestCase):
         self.assertIn("<html lang='en'>", markup)
         self.assertIn("<th>Dining location</th>", markup)
         self.assertIn("2026-09-26 (Saturday)", markup)
+
+    def test_empty_week_has_explicit_email_message(self):
+        subject, plain, markup = render_email(select_updates(report([]), date(2026, 9, 22)), report([]))
+        self.assertEqual(subject, "[cheesecake] 9/21 - 9/27")
+        self.assertIn("No lunch cheesecake candidates found.", plain)
+        self.assertIn("<td colspan='5'>No lunch cheesecake candidates found.</td>", markup)
+        self.assertNotIn("<p>", markup)
+
+    def test_send_mode_delivers_even_when_no_candidates_exist(self):
+        today = datetime.now(ZoneInfo("America/Detroit")).date()
+        with tempfile.TemporaryDirectory() as directory:
+            start = today - timedelta(days=today.weekday())
+            data = {**report([]), "start": start.isoformat(), "end": (start + timedelta(days=6)).isoformat(),
+                    "data_mode": "refresh", "generated_at_utc": datetime.now(timezone.utc).isoformat()}
+            source = Path(directory) / "results.json"
+            source.write_text(json.dumps(data), encoding="utf-8")
+            env = {"SMTP_HOST": "smtp.example.test", "SMTP_USERNAME": "from@example.test",
+                   "SMTP_PASSWORD": "fake", "EMAIL_TO": "to@example.test"}
+            args = ["notify_menus.py", "--mode", "send", "--report", str(source),
+                    "--state", str(Path(directory) / "state.json")]
+            with patch.dict("os.environ", env, clear=True), patch("sys.argv", args), patch("notify_menus.deliver") as delivery:
+                self.assertEqual(main(), 0)
+                delivery.assert_called_once()
+                self.assertEqual(delivery.call_args.args[3], {})
 
     def test_email_settings_validate_recipients_and_tls(self):
         env = {"SMTP_HOST": "smtp.example.test", "SMTP_USERNAME": "from@example.test", "SMTP_PASSWORD": "fake-test-secret", "EMAIL_TO": "to@example.test"}
@@ -145,7 +170,7 @@ class Notifications(unittest.TestCase):
             snapshots.append(deepcopy(value))
         store, sender = Mock(), Mock()
         store.save.side_effect = save
-        updates = select_updates(report(), {}, date(2026, 9, 22))
+        updates = select_updates(report(), date(2026, 9, 22))
         with self.assertRaises(RuntimeError):
             deliver(store, state, "r", updates, {}, ("s", "t", "h"), date(2026, 9, 22), sender)
         sender.assert_called_once()

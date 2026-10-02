@@ -134,7 +134,7 @@ def send_email(config, subject, text, markup):
             raise RuntimeError("Some recipients were refused; delivery requires manual review")
 
 
-def select_updates(report, sent, today):
+def select_updates(report, today):
     if report.get("errors") != 0 or not report.get("coverage"):
         raise ValueError("Menu retrieval was incomplete; refusing to send partial results")
     if any(row.get("status") != "ok" for row in report["coverage"]):
@@ -145,8 +145,7 @@ def select_updates(report, sent, today):
             continue
         key = digest([row["date"], row["location_slug"], row["meal_slug"], row["food_id"], row.get("station")])
         fingerprint = digest([row["name"], row["kind"], row["menu_url"]])
-        if sent.get(key, {}).get("fingerprint") != fingerprint:
-            selected[key] = {"row": row, "fingerprint": fingerprint, "date": row["date"]}
+        selected[key] = {"row": row, "fingerprint": fingerprint, "date": row["date"]}
     return dict(sorted(selected.items(), key=lambda item: (item[1]["row"]["kind"], item[1]["date"], item[1]["row"]["location"], item[1]["row"]["meal"])))
 
 
@@ -154,14 +153,14 @@ def render_email(updates, report):
     weekdays = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
     start, end = date.fromisoformat(report["start"]), date.fromisoformat(report["end"])
     subject = f"[cheesecake] {start.month}/{start.day} - {end.month}/{end.day}"
-    text = [f"Menu week: {start.isoformat()} ({weekdays[start.weekday()]}) to {end.isoformat()} ({weekdays[end.weekday()]}) (MSU local dates)", "", "New or changed menu items are listed below. Categories are based on item names and have not been verified in person. Items may change or sell out."]
-    body = ["<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='font-family:Arial,sans-serif;color:#183d32;line-height:1.6'>", "<h1>MSU cheesecake menu update</h1>", f"<p>{html.escape(text[0])}</p><p>{html.escape(text[2])}</p>"]
+    text = []
+    body = ["<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='font-family:Arial,sans-serif;color:#183d32;line-height:1.6'>"]
     for kind, label in [(KINDS[0], "Cheesecake candidates"), (KINDS[1], "Related desserts to check separately (such as ice cream)")]:
         rows = [entry["row"] for entry in updates.values() if entry["row"]["kind"] == kind]
         if not rows:
             continue
-        text += ["", label]
-        body += [f"<h2>{label}</h2><table cellpadding='8' style='border-collapse:collapse' border='1'><tr><th>Date</th><th>Dining location</th><th>Meal</th><th>Station</th><th>Item</th></tr>"]
+        text += [label, "Date | Dining location | Meal | Station | Item"]
+        body += [f"<table cellpadding='8' style='border-collapse:collapse' border='1'><caption>{html.escape(label)}</caption><tr><th>Date</th><th>Dining location</th><th>Meal</th><th>Station</th><th>Item</th></tr>"]
         for row in rows:
             url = row["menu_url"]
             if urlparse(url).scheme != "https" or urlparse(url).netloc != "msu.nutrislice.com":
@@ -171,8 +170,11 @@ def render_email(updates, report):
             text += [" | ".join(values), url]
             body.append("<tr>" + "".join(f"<td>{html.escape(v)}</td>" for v in values[:4]) + f"<td><a href='{html.escape(url, quote=True)}'>{html.escape(values[4])}</a></td></tr>")
         body.append("</table>")
-    text += ["", "Other possible matches are in the report but are not all included in this email. A missing item or empty menu does not confirm that it will not be served."]
-    body += [f"<p>{html.escape(text[-1])}</p></body></html>"]
+        text.append("")
+    if not updates:
+        text = ["Date | Dining location | Meal | Station | Item", "No lunch cheesecake candidates found."]
+        body.append("<table cellpadding='8' style='border-collapse:collapse' border='1'><tr><th>Date</th><th>Dining location</th><th>Meal</th><th>Station</th><th>Item</th></tr><tr><td colspan='5'>No lunch cheesecake candidates found.</td></tr></table>")
+    body.append("</body></html>")
     return subject, "\n".join(text), "\n".join(body)
 
 
@@ -242,15 +244,13 @@ def main():
         store.save(state)
     if recipient.get("pending"):
         raise RuntimeError("Previous delivery is uncertain. Check inbox and use retry-pending only if needed")
-    updates = select_updates(report, recipient["sent"], today)
+    updates = select_updates(report, today)
     content = render_email(updates, report)
     output = args.report.parent
     (output / "email-preview.txt").write_text(content[0] + "\n\n" + content[1], encoding="utf-8")
     (output / "email-preview.html").write_text(content[2], encoding="utf-8")
     if args.mode == "preview":
         print(f"Preview only: {len(updates)} candidates; no email sent and no state changed.")
-    elif not updates:
-        print("No new or changed future menu candidates; no email sent.")
     else:
         deliver(store, state, recipient_key, updates, config, content, today)
         print(f"SMTP accepted a notification containing {len(updates)} candidates; state saved.")
