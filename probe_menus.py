@@ -89,8 +89,8 @@ def inspect_week(school, meal, anchor, start, end, cache, refresh, offline=False
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--start", type=date.fromisoformat, help="First MSU-local date; defaults to Monday of the current MSU week")
-    parser.add_argument("--days", type=int, default=7)
+    parser.add_argument("--start", type=date.fromisoformat, help="First MSU-local date; defaults to today in the MSU timezone")
+    parser.add_argument("--days", type=int, default=8, help="Number of dates to check, including the start date (default: 8, through start date + 7 days)")
     parser.add_argument("--locations", nargs="*", help="Optional exact restaurant slugs; otherwise all published locations")
     parser.add_argument("--refresh", action="store_true", help="Download again instead of reusing saved evidence")
     parser.add_argument("--offline", action="store_true", help="Use only saved source responses; never contact the website")
@@ -105,7 +105,7 @@ def main():
             today = datetime.now(ZoneInfo("America/Detroit")).date()
         except ZoneInfoNotFoundError:
             parser.error("Timezone data unavailable. Use --start YYYY-MM-DD or install tzdata: python -m pip install tzdata")
-        args.start = today - timedelta(days=today.weekday())
+        args.start = today
     start, end = args.start, args.start + timedelta(days=args.days - 1)
     out = args.output
     cache = out / "raw"
@@ -141,7 +141,7 @@ def main():
     matches = [r for r in classified if r["kind"] != "not_selected"]
     report = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "date_basis": "MSU local calendar dates (US/Eastern); Monday-Sunday if --start is Monday",
+        "date_basis": "MSU local calendar dates (America/Detroit); default is today through 7 days later, inclusive",
         "start": str(start), "end": str(end), "locations": [{"name": s["name"], "slug": s["slug"]} for s in schools],
         "requests": len(jobs), "errors": sum(r["status"] == "error" for r in results),
         "filter_counts": counts, "all_food_rows": len(all_items),

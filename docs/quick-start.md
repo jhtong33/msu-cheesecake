@@ -43,7 +43,7 @@ python3 -m pip install tzdata
 python3 probe_menus.py --refresh
 ```
 
-`tzdata` 提供時區資料，安裝一次即可。爬蟲會依 MSU 當地時間，自動查詢這週星期一至星期日的午餐菜單。
+`tzdata` 提供時區資料，安裝一次即可。爬蟲會依 MSU 當地時間，自動查詢執行當天至 7 天後的午餐菜單，包含頭尾共 8 個日期。
 
 看到 `10/… ... ok` 代表正在執行，請等它結束。實際總數依網站提供午餐的餐廳數而變。最後確認 `errors` 是 `0`，再打開程式資料夾中的 `probe-output/results.md` 看結果。
 
@@ -103,7 +103,7 @@ python3 probe_menus.py --refresh
 
 想現在就查一次，回到 [MSU menu email](https://github.com/jhtong33/msu-cheesecake/actions/workflows/menu-email.yml)，再按 **Run workflow**，這次 mode 選 **send**。
 
-郵件表格列出本週今天起的起司蛋糕候選，並另外標示起司蛋糕相關甜點，例如冰淇淋。沒有候選時仍會寄出表格並標示沒有結果。每次手動執行 **send** 也會寄信。每週只自動檢查一次，週一之後更新的菜單要手動執行 **send** 才會在當週通知。菜單是預定供應，仍以餐廳現場為準。
+郵件表格列出執行當天至 7 天後的起司蛋糕候選，並另外標示起司蛋糕相關甜點，例如冰淇淋。沒有候選時仍會寄出表格並標示沒有結果。每次手動執行 **send** 也會寄信。每週只自動檢查一次，週一之後更新的菜單要手動執行 **send** 才會通知。菜單是預定供應，仍以餐廳現場為準。
 
 ## 卡住時先看這裡
 

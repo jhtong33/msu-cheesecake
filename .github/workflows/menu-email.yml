@@ -49,7 +49,7 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_TO: ${{ secrets.EMAIL_TO || vars.EMAIL_TO }}
         run: python -c "from notify_menus import smtp_config; smtp_config(); print('Email settings present.')"
-      - name: Download current MSU week
+      - name: Download the next eight MSU dates
         if: env.MODE != 'test-email' && env.MODE != 'acknowledge-pending'
         run: python -u probe_menus.py --refresh
       - name: Preview or send notification

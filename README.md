@@ -24,18 +24,18 @@ cd msu-cheesecake
 Windows：
 
 ```powershell
-python probe_menus.py --start 2026-09-21 --refresh
+python probe_menus.py --refresh
 ```
 
 macOS / Linux：
 
 ```sh
-python3 probe_menus.py --start 2026-09-21 --refresh
+python3 probe_menus.py --refresh
 ```
 
-**請把 `2026-09-21` 換成你要查詢那一週的星期一。** 也可以省略 `--start`，程式會依 MSU 時區自動計算當週星期一。若 Windows 顯示缺少時區資料，可繼續明確指定日期，或執行 `python -m pip install tzdata`。
+省略 `--start` 時，程式會依 MSU 時區從執行當天查到 7 天後，包含頭尾共 8 個日期。也可以用 `--start YYYY-MM-DD` 指定起始日，或用 `--days` 更改日期數。若 Windows 顯示缺少時區資料，可明確指定日期，或執行 `python -m pip install tzdata`。
 
-這行指令會重新抓取全部公開餐廳的午餐菜單，從指定日期開始查詢 7 天，保存午餐的全部品項並分類候選。
+這行指令會重新抓取全部公開餐廳的午餐菜單，從當天開始查詢至 7 天後，保存午餐的全部品項並分類候選。
 
 執行時會顯示 `10/… ... ok` 等進度。分母會依網站當時提供午餐的餐廳數而變動。等程式結束，確認最後的 `errors` 是 `0`。
 
@@ -75,13 +75,13 @@ open -a TextEdit probe-output/results.md
 **重新抓取最新資料**，包含已抓過的日期：
 
 ```powershell
-python probe_menus.py --start 2026-09-21 --refresh
+python probe_menus.py --refresh
 ```
 
 **只用已保存資料重新分析**，不連線網站：
 
 ```powershell
-python probe_menus.py --start 2026-09-21 --offline
+python probe_menus.py --offline
 ```
 
 剛 clone 的版本不包含任何菜單資料，第一次請用 `--refresh`。未加 `--refresh` 或 `--offline` 時，有快取就使用快取，缺少的資料才連線下載。
@@ -89,7 +89,7 @@ python probe_menus.py --start 2026-09-21 --offline
 **只查某間餐廳**，並另存結果：
 
 ```powershell
-python probe_menus.py --start 2026-09-21 --locations south-pointe-at-case --refresh --output case-output
+python probe_menus.py --locations south-pointe-at-case --refresh --output case-output
 ```
 
 **查看所有參數**：
@@ -135,7 +135,7 @@ python probe_menus.py --help
 python notify_menus.py --mode preview
 ```
 
-用瀏覽器開啟 `probe-output/email-preview.html`。預覽顯示本週今天起的候選，不會寫入已寄送紀錄。
+用瀏覽器開啟 `probe-output/email-preview.html`。預覽顯示今天至 7 天後的候選，不會寫入已寄送紀錄。
 
 執行測試（不會寄信）：
 
