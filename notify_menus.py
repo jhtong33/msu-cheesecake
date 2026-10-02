@@ -2,7 +2,7 @@
 
 import argparse
 import base64
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
 import hashlib
 import html
@@ -151,8 +151,10 @@ def select_updates(report, sent, today):
 
 
 def render_email(updates, report):
-    subject = f"[MSU] Cheesecake menu update: {len(updates)} candidate(s)"
-    text = [f"Menu week: {report['start']} to {report['end']} (MSU local dates)", "", "New or changed menu items are listed below. Categories are based on item names and have not been verified in person. Items may change or sell out."]
+    weekdays = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+    start, end = date.fromisoformat(report["start"]), date.fromisoformat(report["end"])
+    subject = f"[cheesecake] {start.month}/{start.day} - {end.month}/{end.day}"
+    text = [f"Menu week: {start.isoformat()} ({weekdays[start.weekday()]}) to {end.isoformat()} ({weekdays[end.weekday()]}) (MSU local dates)", "", "New or changed menu items are listed below. Categories are based on item names and have not been verified in person. Items may change or sell out."]
     body = ["<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='font-family:Arial,sans-serif;color:#183d32;line-height:1.6'>", "<h1>MSU cheesecake menu update</h1>", f"<p>{html.escape(text[0])}</p><p>{html.escape(text[2])}</p>"]
     for kind, label in [(KINDS[0], "Cheesecake candidates"), (KINDS[1], "Related desserts to check separately (such as ice cream)")]:
         rows = [entry["row"] for entry in updates.values() if entry["row"]["kind"] == kind]
@@ -164,7 +166,8 @@ def render_email(updates, report):
             url = row["menu_url"]
             if urlparse(url).scheme != "https" or urlparse(url).netloc != "msu.nutrislice.com":
                 raise ValueError("Unexpected menu link domain")
-            values = [row["date"], row["location"], row["meal"], row.get("station") or "", row["name"]]
+            menu_date = date.fromisoformat(row["date"])
+            values = [f"{menu_date.isoformat()} ({weekdays[menu_date.weekday()]})", row["location"], row["meal"], row.get("station") or "", row["name"]]
             text += [" | ".join(values), url]
             body.append("<tr>" + "".join(f"<td>{html.escape(v)}</td>" for v in values[:4]) + f"<td><a href='{html.escape(url, quote=True)}'>{html.escape(values[4])}</a></td></tr>")
         body.append("</table>")

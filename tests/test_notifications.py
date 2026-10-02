@@ -94,10 +94,12 @@ class Notifications(unittest.TestCase):
     def test_notification_is_in_english(self):
         updates = select_updates(report(), {}, date(2026, 9, 22))
         subject, plain, markup = render_email(updates, report())
-        self.assertIn("Cheesecake menu update", subject)
+        self.assertEqual(subject, "[cheesecake] 9/21 - 9/27")
         self.assertIn("Cheesecake candidates", plain)
+        self.assertIn("2026-09-26 (Saturday)", plain)
         self.assertIn("<html lang='en'>", markup)
         self.assertIn("<th>Dining location</th>", markup)
+        self.assertIn("2026-09-26 (Saturday)", markup)
 
     def test_email_settings_validate_recipients_and_tls(self):
         env = {"SMTP_HOST": "smtp.example.test", "SMTP_USERNAME": "from@example.test", "SMTP_PASSWORD": "fake-test-secret", "EMAIL_TO": "to@example.test"}
