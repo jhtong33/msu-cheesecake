@@ -98,9 +98,10 @@ def smtp_config():
         raise ValueError("Missing email settings: " + ", ".join(missing))
     sender = os.environ.get("EMAIL_FROM") or os.environ["SMTP_USERNAME"]
     recipients = sorted(set(address.strip().lower() for address in os.environ["EMAIL_TO"].split(",") if address.strip()))
-    for address in [sender, *recipients]:
-        if not re.fullmatch(r"[^\s<>@,]+@[^\s<>@,]+\.[^\s<>@,]+", address):
-            raise ValueError("Email settings must contain plain email addresses without line breaks")
+    for key, addresses in (("SMTP_USERNAME", [os.environ["SMTP_USERNAME"]]),
+                           ("EMAIL_FROM", [sender]), ("EMAIL_TO", recipients)):
+        if any(not re.fullmatch(r"[^\s<>@,]+@[^\s<>@,]+\.[^\s<>@,]+", address) for address in addresses):
+            raise ValueError(f"{key} must contain plain email addresses without line breaks")
     security = os.environ.get("SMTP_SECURITY", "starttls").lower()
     if security not in ("starttls", "ssl"):
         raise ValueError("SMTP_SECURITY must be starttls or ssl")

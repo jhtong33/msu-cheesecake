@@ -104,7 +104,10 @@ class Notifications(unittest.TestCase):
         with patch.dict("os.environ", env, clear=True):
             self.assertEqual(smtp_config()["security"], "starttls")
         with patch.dict("os.environ", {**env, "EMAIL_TO": "to@example.test\nBcc: bad@example.test"}, clear=True):
-            with self.assertRaises(ValueError):
+            with self.assertRaisesRegex(ValueError, "EMAIL_TO"):
+                smtp_config()
+        with patch.dict("os.environ", {**env, "SMTP_USERNAME": "Sender <from@example.test>"}, clear=True):
+            with self.assertRaisesRegex(ValueError, "SMTP_USERNAME"):
                 smtp_config()
 
     def test_local_state_roundtrip(self):
