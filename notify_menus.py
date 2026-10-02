@@ -140,7 +140,7 @@ def select_updates(report, sent, today):
         raise ValueError("Menu source failed; refusing to send partial results")
     selected = {}
     for row in report["matches"]:
-        if row["kind"] not in KINDS or not today.isoformat() <= row["date"] <= report["end"]:
+        if row["kind"] not in KINDS or row["meal_slug"].lower() != "lunch" or not today.isoformat() <= row["date"] <= report["end"]:
             continue
         key = digest([row["date"], row["location_slug"], row["meal_slug"], row["food_id"], row.get("station")])
         fingerprint = digest([row["name"], row["kind"], row["menu_url"]])
@@ -150,15 +150,15 @@ def select_updates(report, sent, today):
 
 
 def render_email(updates, report):
-    subject = f"[MSU] 起司蛋糕菜單更新：{len(updates)} 筆候選"
-    text = [f"查詢週期：{report['start']} 至 {report['end']}（MSU 當地日期）", "", "以下是新增或變更的菜單紀錄；品名分類不是人工確認，現場可能換菜或售完。"]
-    body = ["<!doctype html><html lang='zh-Hant'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='font-family:Arial,sans-serif;color:#183d32;line-height:1.6'>", "<h1>MSU 起司蛋糕菜單更新</h1>", f"<p>{html.escape(text[0])}</p><p>{html.escape(text[2])}</p>"]
-    for kind, label in [(KINDS[0], "起司蛋糕候選"), (KINDS[1], "相關甜點，請另行確認（可能是冰淇淋等）")]:
+    subject = f"[MSU] Cheesecake menu update: {len(updates)} candidate(s)"
+    text = [f"Menu week: {report['start']} to {report['end']} (MSU local dates)", "", "New or changed menu items are listed below. Categories are based on item names and have not been verified in person. Items may change or sell out."]
+    body = ["<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'></head><body style='font-family:Arial,sans-serif;color:#183d32;line-height:1.6'>", "<h1>MSU cheesecake menu update</h1>", f"<p>{html.escape(text[0])}</p><p>{html.escape(text[2])}</p>"]
+    for kind, label in [(KINDS[0], "Cheesecake candidates"), (KINDS[1], "Related desserts to check separately (such as ice cream)")]:
         rows = [entry["row"] for entry in updates.values() if entry["row"]["kind"] == kind]
         if not rows:
             continue
         text += ["", label]
-        body += [f"<h2>{label}</h2><table cellpadding='8' style='border-collapse:collapse' border='1'><tr><th>日期</th><th>餐廳</th><th>餐別</th><th>餐台</th><th>品名</th></tr>"]
+        body += [f"<h2>{label}</h2><table cellpadding='8' style='border-collapse:collapse' border='1'><tr><th>Date</th><th>Dining location</th><th>Meal</th><th>Station</th><th>Item</th></tr>"]
         for row in rows:
             url = row["menu_url"]
             if urlparse(url).scheme != "https" or urlparse(url).netloc != "msu.nutrislice.com":
@@ -167,7 +167,7 @@ def render_email(updates, report):
             text += [" | ".join(values), url]
             body.append("<tr>" + "".join(f"<td>{html.escape(v)}</td>" for v in values[:4]) + f"<td><a href='{html.escape(url, quote=True)}'>{html.escape(values[4])}</a></td></tr>")
         body.append("</table>")
-    text += ["", "寬鬆候選保留在報表，未全部放入通知；未出現或空白菜單不代表取消供應。"]
+    text += ["", "Other possible matches are in the report but are not all included in this email. A missing item or empty menu does not confirm that it will not be served."]
     body += [f"<p>{html.escape(text[-1])}</p></body></html>"]
     return subject, "\n".join(text), "\n".join(body)
 
@@ -199,8 +199,8 @@ def main():
     today = datetime.now(ZoneInfo("America/Detroit")).date()
     config = smtp_config() if args.mode != "preview" else None
     if args.mode in ("test-email", "failure"):
-        subject = "[MSU] 自動通知測試成功" if args.mode == "test-email" else "[MSU] 菜單檢查失敗，需要查看"
-        text = ("這是一封設定測試信，收到表示寄信服務已連通。" if args.mode == "test-email" else "本次菜單檢查或通知流程未完成，不能判定是否有起司蛋糕。請到 GitHub Actions 查看本次執行紀錄。")
+        subject = "[MSU] Email notification test" if args.mode == "test-email" else "[MSU] Menu check failed: action needed"
+        text = ("This is a test email. If you received it, the email service is connected." if args.mode == "test-email" else "The menu check or notification did not finish, so cheesecake availability is unknown. Check the GitHub Actions run for details.")
         url = os.environ.get("GITHUB_SERVER_URL", "https://github.com") + "/" + os.environ.get("GITHUB_REPOSITORY", "") + "/actions/runs/" + os.environ.get("GITHUB_RUN_ID", "")
         if os.environ.get("GITHUB_RUN_ID"):
             text += "\n" + url

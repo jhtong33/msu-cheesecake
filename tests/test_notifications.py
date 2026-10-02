@@ -36,9 +36,9 @@ class Notifications(unittest.TestCase):
         updates = select_updates(report([record(date="2026-09-21"), record(date="2026-09-27")]), {}, date(2026, 9, 22))
         self.assertEqual([v["date"] for v in updates.values()], ["2026-09-27"])
 
-    def test_same_food_different_meals_preserved_duplicates_collapsed(self):
+    def test_only_lunch_selected_and_duplicates_collapsed(self):
         rows = [record(), record(), record(meal_slug="dinner", meal="Dinner")]
-        self.assertEqual(len(select_updates(report(rows), {}, date(2026, 9, 22))), 2)
+        self.assertEqual(len(select_updates(report(rows), {}, date(2026, 9, 22))), 1)
 
     def test_success_deduplicates_and_changed_name_is_new(self):
         state = {"version": 1, "recipients": {}}
@@ -90,6 +90,14 @@ class Notifications(unittest.TestCase):
         updates = select_updates(report([record(menu_url="https://example.invalid/")]), {}, date(2026, 9, 22))
         with self.assertRaises(ValueError):
             render_email(updates, report())
+
+    def test_notification_is_in_english(self):
+        updates = select_updates(report(), {}, date(2026, 9, 22))
+        subject, plain, markup = render_email(updates, report())
+        self.assertIn("Cheesecake menu update", subject)
+        self.assertIn("Cheesecake candidates", plain)
+        self.assertIn("<html lang='en'>", markup)
+        self.assertIn("<th>Dining location</th>", markup)
 
     def test_email_settings_validate_recipients_and_tls(self):
         env = {"SMTP_HOST": "smtp.example.test", "SMTP_USERNAME": "from@example.test", "SMTP_PASSWORD": "fake-test-secret", "EMAIL_TO": "to@example.test"}

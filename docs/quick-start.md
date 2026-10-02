@@ -43,9 +43,9 @@ python3 -m pip install tzdata
 python3 probe_menus.py --refresh
 ```
 
-`tzdata` 提供時區資料，安裝一次即可。爬蟲會依 MSU 當地時間，自動查詢這週星期一至星期日。
+`tzdata` 提供時區資料，安裝一次即可。爬蟲會依 MSU 當地時間，自動查詢這週星期一至星期日的午餐菜單。
 
-看到 `10/108 ... ok` 代表正在執行，請等它結束。最後確認 `errors` 是 `0`，再打開程式資料夾中的 `probe-output/results.md` 看結果。
+看到 `10/… ... ok` 代表正在執行，請等它結束。實際總數依網站提供午餐的餐廳數而變。最後確認 `errors` 是 `0`，再打開程式資料夾中的 `probe-output/results.md` 看結果。
 
 這一步只查菜單，不會寄信。
 

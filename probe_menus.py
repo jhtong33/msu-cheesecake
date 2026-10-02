@@ -119,9 +119,9 @@ def main():
         schools = [s for s in schools if s["slug"] in args.locations]
     # Nutrislice returns Sunday-Saturday weeks. Cover both API weeks when needed.
     anchors = sorted({start + timedelta(days=i) - timedelta(days=(start + timedelta(days=i)).isoweekday() % 7) for i in range(args.days)})
-    jobs = [(s, m, a) for s in schools for m in s["active_menu_types"] for a in anchors]
+    jobs = [(s, m, a) for s in schools for m in s["active_menu_types"] if m["slug"].lower() == "lunch" for a in anchors]
     if not jobs:
-        parser.error("No active menu sources were returned; cannot verify the menus")
+        parser.error("No active lunch menu sources were returned; cannot verify the menus")
     results = []
     print(f"Inspecting {len(schools)} locations, {len(jobs)} weekly menu sources, {start} to {end}; offline={args.offline}", flush=True)
     with ThreadPoolExecutor(max_workers=2) as pool:
