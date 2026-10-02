@@ -1,6 +1,6 @@
 # 第一次使用：下載程式、開啟自動寄信
 
-完成設定後，GitHub 會每天查 MSU 菜單，有新的起司蛋糕候選就寄信。自己的電腦可以關機。
+完成設定後，GitHub 會每週一查 MSU 菜單，有新的起司蛋糕候選就寄信。自己的電腦可以關機。
 
 下載程式和自動寄信是兩件事。只想收信，可以跳過第 1、2 步，直接從第 3 步開始。
 
@@ -95,15 +95,15 @@ python3 probe_menus.py --refresh
 
 綠色勾勾表示寄信流程成功；仍要實際確認信箱收到了信。收到後再進行下一步。
 
-## 7. 開啟每天自動檢查
+## 7. 開啟每週自動檢查
 
 回到 [Variables 設定頁](https://github.com/cola-byte/msu-cheesecake/settings/variables/actions)，編輯 `EMAIL_ENABLED`，把值從 `false` 改成小寫的 `true`，再儲存。
 
-完成！之後每天 **MSU 當地時間早上 07:17** 由 GitHub 執行，可能稍有延遲，電腦不用開著。
+完成！之後每週一 **MSU 當地時間凌晨 02:00** 由 GitHub 執行，可能稍有延遲，電腦不用開著。
 
 想現在就查一次，回到 [MSU menu email](https://github.com/cola-byte/msu-cheesecake/actions/workflows/menu-email.yml)，再按 **Run workflow**，這次 mode 選 **send**。
 
-郵件列出本週今天起的起司蛋糕候選，並另外標示起司蛋糕相關甜點，例如冰淇淋。沒有新候選就不寄；同樣的結果不會每天重複寄。菜單是預定供應，仍以餐廳現場為準。
+郵件列出本週今天起的起司蛋糕候選，並另外標示起司蛋糕相關甜點，例如冰淇淋。沒有新候選就不寄；同樣的結果不會重複寄。每週只自動檢查一次，週一之後更新的菜單要手動執行 **send** 才會在當週通知。菜單是預定供應，仍以餐廳現場為準。
 
 ## 卡住時先看這裡
 
@@ -113,7 +113,7 @@ python3 probe_menus.py --refresh
 | 找不到 `git` 或 `python` 指令 | 本機尚未安裝對應軟體，或安裝後需要重開終端機；只用自動寄信可跳到第 3 步 |
 | `test-email` 出現紅色叉叉 | 點開失敗步驟，確認寄件帳號和應用程式密碼屬於同一個 Google 帳號，且 Secret 名稱是 `SMTP_PASSWORD` |
 | 排程顯示 Skipped | 確認 `EMAIL_ENABLED` 是小寫 `true` |
-| 沒有每天收到信 | 沒有新候選時不寄信；到 Actions 查看最近一次是否成功 |
+| 週一沒有收到信 | 沒有新候選時不寄信；到 Actions 查看最近一次是否成功 |
 | 想暫停自動檢查 | 把 `EMAIL_ENABLED` 改回 `false` |
 
 進階模式與寄送狀態處理，請看 [自動寄信設定](email-setup.md)。

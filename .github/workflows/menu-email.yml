@@ -2,7 +2,7 @@ name: MSU menu email
 
 on:
   schedule:
-    - cron: '17 7 * * *'
+    - cron: '0 2 * * 1'
       timezone: America/Detroit
   workflow_dispatch:
     inputs:

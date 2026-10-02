@@ -1,13 +1,13 @@
-# 每天自動寄信
+# 每週自動寄信
 
 設定一次後，由 GitHub Actions 執行，自己的電腦不用保持開機。
 
 ## 預設行為
 
-- 每天 **MSU 當地時間 07:17** 檢查當週星期一至星期日的菜單；排程可能稍有延遲。
+- 每週一 **MSU 當地時間 02:00** 檢查當週星期一至星期日的菜單；排程可能稍有延遲。
 - 完整抓取午餐菜單後篩選；郵件只列午餐的起司蛋糕候選，以及另外標示的相關甜點（例如冰淇淋）。
 - 過去日期不通知；只有新出現或品名等資訊改變時才寄出。
-- 同樣的結果不會每天重複寄信；沒有新結果就不寄。
+- 同樣的結果不會重複寄信；沒有新結果就不寄。每週只自動檢查一次，週一之後更新的菜單可手動執行 **send** 查詢。
 - 幾千筆寬鬆候選保存在執行結果，沒有全部塞入信件。
 - 抓取或通知失敗時嘗試寄故障通知；若寄信服務本身失效，改看 Actions 的失敗紀錄及 GitHub 通知。
 
@@ -17,7 +17,7 @@
 2. 開啟 [GitHub Actions Secrets](https://github.com/cola-byte/msu-cheesecake/settings/secrets/actions)，按 **New repository secret**。Name 填 `SMTP_PASSWORD`，Secret 填剛產生的應用程式密碼，再儲存。
 3. 在 [Actions Variables](https://github.com/cola-byte/msu-cheesecake/settings/variables/actions) 設定下表。
 4. 到 [MSU menu email](https://github.com/cola-byte/msu-cheesecake/actions/workflows/menu-email.yml)，按 **Run workflow**，mode 選 **test-email**，確認收得到測試信。
-5. 將 `EMAIL_ENABLED` 改為 `true`，啟用每日自動執行。也可手動選 **send** 立即抓取並寄出候選。
+5. 將 `EMAIL_ENABLED` 改為 `true`，啟用每週自動執行。也可手動選 **send** 立即抓取並寄出候選。
 
 如果目前帳號的寄件／收件地址已由維護者設定好，第 3 步不用重填。
 
